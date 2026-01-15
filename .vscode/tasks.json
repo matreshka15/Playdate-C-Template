@@ -1,0 +1,54 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "构建游戏 (build.ps1)",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.ps1",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "构建并运行游戏",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.ps1",
+            "args": ["-Run"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "清理构建",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build.ps1",
+            "args": ["-Clean"],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "运行配置向导",
+            "type": "shell",
+            "command": "${workspaceFolder}\\setup.ps1",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            }
+        }
+    ]
+}

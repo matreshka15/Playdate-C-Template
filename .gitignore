@@ -1,0 +1,45 @@
+# Playdate C Game Template
+
+# Build outputs
+build/
+*.pdx/
+*.o
+*.obj
+*.dll
+*.elf
+*.bin
+*.hex
+
+# Visual Studio / VSCode
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Batch files (auto-generated)
+*.bat
+
+# Compiler generated
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Logs
+*.log
+
+# Sentry (crash reporting)
+.sentry-native/
+
+# Test folders
+Data/
+Games/
+Screenshots/

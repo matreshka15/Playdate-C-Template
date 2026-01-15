@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "运行游戏 (F5)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${env:PLAYDATE_SDK_PATH}/bin/PlaydateSimulator.exe",
+            "args": [
+                "${workspaceFolder}/MyPlaydateGame.pdx"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole",
+            "preLaunchTask": "构建游戏 (build.ps1)"
+        }
+    ]
+}

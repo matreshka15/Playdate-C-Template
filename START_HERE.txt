@@ -1,0 +1,88 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║     🎮 Welcome to Playdate C Game Template!                       ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+📦 Everything you need to make Playdate games in C!
+
+  ✨ One-command setup wizard
+  🔨 Simple build system (no CMake!)
+  💻 VS Code ready
+  🎮 Working demo game
+  📚 Beginner-friendly docs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 First Time Here?
+
+  Run this in PowerShell:
+
+    .\setup.ps1
+
+  The friendly wizard will:
+  → Check your system 🔍
+  → Set up everything ⚙️
+  → Build the demo game 🎮
+  → Get you coding fast! ⚡
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ Already Set Up?
+
+  Quick commands:
+
+    .\build.ps1 -Run      Build + run (most common!)
+    .\build.ps1           Just build
+    .\build.ps1 -Clean    Clean everything
+
+  Or in VS Code:
+    F5                    Run game
+    Ctrl+Shift+B          Build
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 Documentation
+
+  README.md              ← Start here! Quick overview
+  GETTING_STARTED.md     ← Learn Playdate C programming
+  PUBLISHING_GUIDE.md    ← Share on GitHub
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 Your Code
+
+  src/main.c            ← Edit this to make your game!
+  
+  Add more .c files in src/ and they'll auto-compile! 🎨
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 Learning Path
+
+  1. Run setup.ps1 ← You are here!
+  2. See demo run in simulator
+  3. Edit src/main.c
+  4. Read GETTING_STARTED.md
+  5. Make your game! 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 Need Help?
+
+  • Read GETTING_STARTED.md
+  • Visit https://devforum.play.date/
+  • Check SDK examples
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Can't run scripts?
+
+  Run this once:
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Happy game making! 🎮✨
+
+Now run:  .\setup.ps1

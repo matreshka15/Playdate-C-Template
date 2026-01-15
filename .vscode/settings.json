@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c",
+        "pd_api.h": "c"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.configureOnOpen": false,
+    "terminal.integrated.env.windows": {
+        "PLAYDATE_SDK_PATH": "D:\\APP\\PlaydateSDK"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/build": true,
+        "**/*.pdx": false
+    }
+}
