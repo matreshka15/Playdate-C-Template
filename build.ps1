@@ -53,22 +53,53 @@ $icons = Get-Icons
 function Show-AsciiArt {
     $colors = Get-Colors
     $art = @"
-     _______
-    |       |  PLAYDATE C
-    |  ___  |  GAME BUILDER
-    | |   | |
-    | |___| |  v$script:Version
-    |       |
-    |   +   |  (C)ompile it!
-    |_______|
+      ___________
+     |  _______  |  PLAYDATE C
+     | |       | |  GAME BUILDER
+     | |_______| |__
+     |      @    |  | v$script:Version
+     |   _    O  |  |
+     | _| |_  O  |  |
+     ||_   _|    |__| (C)ompile it!
+     |  |_|      |
+     |___________|
 "@
     Write-Host $art -ForegroundColor $colors.Highlight
 }
 
+function Get-Faces {
+    return @{
+        Happy    = "(^_^)"
+        Success  = "(*^v^*)"
+        Excited  = "\(^o^)/"
+        Warning  = "(>_<)"
+        Error    = "(T_T)"
+        Info     = "(o_o)"
+        Confused = "(?_?)"
+        Sleepy   = "(-.-)Zzz"
+        Cool     = "(^_~)d"
+    }
+}
+
 function Speak-Message {
-    param([string]$Message, [string]$Color = "Cyan")
+    param([string]$Message, [string]$Color = "Cyan", [string]$Mood = "")
     $colors = Get-Colors
-    $face = "(^_^)"
+    $faces = Get-Faces
+    
+    # Auto-detect mood if not provided
+    if (-not $Mood) {
+        switch ($Color) {
+            "Success"   { $Mood = "Success" }
+            "Error"     { $Mood = "Error" }
+            "Warning"   { $Mood = "Warning" }
+            "Info"      { $Mood = "Info" }
+            "Cyan"      { $Mood = "Happy" }
+            "Highlight" { $Mood = "Excited" }
+            default     { $Mood = "Happy" }
+        }
+    }
+
+    $face = if ($faces.ContainsKey($Mood)) { $faces[$Mood] } else { $faces.Happy }
     Write-Host "`n  $face $Message" -ForegroundColor $colors.$Color
 }
 
@@ -134,7 +165,25 @@ function Resolve-SDKPath {
     $envPath = $env:PLAYDATE_SDK_PATH
     if ($envPath -and (Test-Path $envPath)) { return $envPath }
     
-    $commonPaths = @("D:\APP\PlaydateSDK", "C:\PlaydateSDK", "${env:HOME}\PlaydateSDK")
+    $commonPaths = @(
+        "$env:USERPROFILE\Documents\PlaydateSDK",
+        "$env:USERPROFILE\Documents\Playdate SDK",
+        "$env:ProgramFiles\PlaydateSDK",
+        "$env:ProgramFiles\Playdate SDK",
+        "${env:ProgramFiles(x86)}\PlaydateSDK",
+        "${env:ProgramFiles(x86)}\Playdate SDK",
+        "C:\PlaydateSDK",
+        "C:\Playdate SDK",
+        "D:\PlaydateSDK",
+        "E:\PlaydateSDK",
+        "D:\Program Files\PlaydateSDK",
+        "D:\Program Files (x86)\PlaydateSDK",
+        "E:\Program Files\PlaydateSDK",
+        "E:\Program Files (x86)\PlaydateSDK",
+        "${env:HOME}\PlaydateSDK",
+        "${env:HOME}\Playdate SDK",
+        "$env:USERPROFILE\PlaydateSDK"
+    )
     foreach ($path in $commonPaths) { if (Test-Path $path) { return $path } }
     return $null
 }
@@ -144,6 +193,139 @@ function Resolve-ProjectName {
     if ($ProvidedName) { return $ProvidedName }
     if ($Config -and $Config.projectName) { return $Config.projectName }
     return "MyPlaydateGame"
+}
+
+function Get-VisualStudioPath {
+    param([string]$ConfigPath)
+
+    # -1. Check Config Path
+    if ($ConfigPath -and (Test-Path $ConfigPath)) {
+        return $ConfigPath
+    }
+
+    # 0. Check Environment Variables (Developer Command Prompt)
+    if ($env:VSINSTALLDIR -and (Test-Path $env:VSINSTALLDIR)) {
+        $vcvarsPath = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvars64.bat"
+        if (Test-Path $vcvarsPath) {
+            return $vcvarsPath
+        }
+    }
+
+    # 1. Try vswhere (most reliable method)
+    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vswherePath)) {
+        $vswherePath = "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe"
+    }
+
+    if (Test-Path $vswherePath) {
+        try {
+            # Search for VS with VC++ tools using JSON format
+            $jsonOutput = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json
+            
+            if ($jsonOutput) {
+                if ($jsonOutput -is [array]) { $vsInfo = $jsonOutput[0] } else { $vsInfo = $jsonOutput }
+                $vsPath = $vsInfo.installationPath
+                
+                if ($vsPath -and (Test-Path $vsPath)) {
+                    $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+                    if (Test-Path $vcvarsPath) {
+                        return $vcvarsPath
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    # 2. Fallback to legacy search
+    $basePaths = @(
+        "C:\Program Files\Microsoft Visual Studio",
+        "C:\Program Files (x86)\Microsoft Visual Studio"
+    )
+    $years = @("2022", "2019", "2017")
+    $editions = @("Community", "Professional", "Enterprise", "BuildTools")
+
+    foreach ($base in $basePaths) {
+        foreach ($year in $years) {
+            foreach ($edition in $editions) {
+                $vcvarsPath = Join-Path $base "$year\$edition\VC\Auxiliary\Build\vcvars64.bat"
+                if (Test-Path $vcvarsPath) {
+                    return $vcvarsPath
+                }
+            }
+        }
+    }
+    return $null
+}
+
+function Import-VisualStudioEnv {
+    param([string]$VcVarsPath)
+    
+    # Check if cl is already available
+    if (Get-Command "cl.exe" -ErrorAction SilentlyContinue) {
+        return $true
+    }
+
+    if (-not $VcVarsPath -or -not (Test-Path $VcVarsPath)) {
+        return $false
+    }
+
+    # OPTIMIZATION: Cache environment variables
+    $cacheDir = Join-Path $env:TEMP "PlaydateVSBuildCache"
+    if (-not (Test-Path $cacheDir)) { New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null }
+    
+    $pathHash = [BitConverter]::ToString(($([System.Security.Cryptography.SHA256]::Create()).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($VcVarsPath)))).Replace("-", "")
+    $cacheFile = Join-Path $cacheDir "env_$pathHash.json"
+    
+    if (Test-Path $cacheFile) {
+        try {
+            $vcvarsTime = (Get-Item $VcVarsPath).LastWriteTime
+            $cacheTime = (Get-Item $cacheFile).LastWriteTime
+            
+            if ($cacheTime -gt $vcvarsTime) {
+                $cachedEnv = Get-Content $cacheFile | ConvertFrom-Json
+                foreach ($prop in $cachedEnv.PSObject.Properties) {
+                    [Environment]::SetEnvironmentVariable($prop.Name, $prop.Value, "Process")
+                }
+                if (Get-Command "cl.exe" -ErrorAction SilentlyContinue) { return $true }
+            }
+        } catch { Remove-Item $cacheFile -ErrorAction SilentlyContinue }
+    }
+
+    Write-Info "Initializing Visual Studio environment (this runs once)..."
+    
+    # Capture environment variables from vcvars batch file
+    # We use cmd to run vcvars and then capture stdout directly to avoid encoding issues with temp files
+    Write-Host "  $($icons.Settings) Running vcvars64.bat..." -ForegroundColor Gray
+    
+    $lines = & cmd /c "`"$VcVarsPath`" > nul && set" 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        $envMap = @{}
+        foreach ($line in $lines) {
+            if ($line -match "^(.*?)=(.*)$") {
+                $name = $matches[1]
+                $value = $matches[2]
+                
+                # Skip empty names or internal cmd variables
+                if ([string]::IsNullOrWhiteSpace($name) -or $name.StartsWith(":")) { continue }
+
+                # Set variable
+                if ([Environment]::GetEnvironmentVariable($name, "Process") -ne $value) {
+                    [Environment]::SetEnvironmentVariable($name, $value, "Process")
+                    $envMap[$name] = $value
+                }
+            }
+        }
+        
+        # Verify result
+        if (Get-Command "cl.exe" -ErrorAction SilentlyContinue) {
+             # Save cache only if successful
+            try { $envMap | ConvertTo-Json -Depth 1 | Set-Content $cacheFile } catch {}
+            return $true
+        }
+    }
+    
+    return $false
 }
 
 # --- INITIALIZATION ---
@@ -178,20 +360,19 @@ if (-not $SDK_PATH) {
 }
 Write-Success "SDK found at $SDK_PATH"
 
-$vsPath = "C:\Program Files\Microsoft Visual Studio\2022"
-$vcvarsPath = $null
-foreach ($edition in @("Enterprise", "Professional", "Community")) {
-    $testPath = "$vsPath\$edition\VC\Auxiliary\Build\vcvars64.bat"
-    if (Test-Path $testPath) {
-        $vcvarsPath = $testPath
-        Write-Success "Visual Studio 2022 $edition found"
-        break
-    }
-}
+$vcvarsPath = Get-VisualStudioPath -ConfigPath $config.visualStudioPath
 
-if (-not $vcvarsPath) {
-    Write-ErrorMsg "Visual Studio 2022 is missing!"
-    Write-Info "I need the C++ compiler to work my magic."
+if ($vcvarsPath) {
+    Write-Success "Visual Studio environment found"
+    if (-not (Import-VisualStudioEnv -VcVarsPath $vcvarsPath)) {
+        Write-ErrorMsg "Failed to initialize Visual Studio environment."
+        Write-Info "Could not load environment from: $vcvarsPath"
+        exit 1
+    }
+} else {
+    Write-ErrorMsg "Visual Studio is missing!"
+    Write-Info "I need the C++ compiler (MSVC) to work my magic."
+    Write-Info "Please install Visual Studio 2022/2019/2017 with C++ Desktop Development workload."
     exit 1
 }
 
@@ -221,45 +402,49 @@ Write-Info "Found $($sourceFiles.Count) source file(s)."
 
 $includes = "/I`"$SDK_PATH\C_API`""
 $defines = "/DTARGET_PLAYDATE=1 /DTARGET_EXTENSION=1 /DTARGET_SIMULATOR=1 /D_WINDLL"
-$compilerFlags = "/c /nologo /W3 /Z7 /Od /MD"
-$objFiles = @()
+$compilerFlags = "/c /nologo /W3 /Z7 /Od /MD /MP"
 
-foreach ($sourceFile in $sourceFiles) {
-    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($sourceFile)
-    $objFile = "$BUILD_DIR\$fileName.obj"
-    $objFiles += $objFile
+# OPTIMIZATION: Compile all files in one go to leverage /MP (Parallel Build)
+Write-Host "  $($icons.Code) Compiling $($sourceFiles.Count) files..." -ForegroundColor Gray
 
-    Write-Host "  $($icons.Code) Compiling: $([System.IO.Path]::GetFileName($sourceFile))..." -ForegroundColor Gray
-    
-    $batchContent = "@echo off`ncall `"$vcvarsPath`"`ncl $compilerFlags $defines $includes `"$sourceFile`" /Fo:`"$objFile`""
-    $batchFile = "$BUILD_DIR\compile_$fileName.bat"
-    Set-Content -Path $batchFile -Value $batchContent
-    
-    $result = & cmd /c $batchFile 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-ErrorMsg "Compilation failed on $fileName.c"
-        Write-Host $result -ForegroundColor Red
-        exit 1
-    }
+# Wrap paths in quotes
+$quotedSourceFiles = $sourceFiles | ForEach-Object { "`"$_`"" }
+$allSources = $quotedSourceFiles -join " "
+
+# Ensure build dir has trailing slash for /Fo
+$outputDirParam = "/Fo`"$BUILD_DIR\`""
+
+# Execute cl directly (environment is already loaded)
+$compileCmd = "cl $compilerFlags $defines $includes $allSources $outputDirParam"
+$result = Invoke-Expression $compileCmd 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-ErrorMsg "Compilation failed!"
+    Write-Host "$result" -ForegroundColor Red
+    exit 1
 }
-Write-Success "All files compiled successfully!"
+
+Write-Success "Compilation complete!"
 
 # --- STAGE: LINK ---
 Start-Level "Gluing It All Together" $currentStage $totalStages
 $currentStage++
 
 $dllFile = "$BUILD_DIR\pdex.dll"
+# Collect all .obj files from the build directory
+$objFiles = Get-ChildItem -Path $BUILD_DIR -Filter *.obj | ForEach-Object { $_.FullName }
 $objList = ($objFiles | ForEach-Object { "`"$_`"" }) -join " "
 $linkerFlags = "/DLL /NOLOGO /DEBUG /INCREMENTAL:NO /EXPORT:eventHandler"
 
-$batchContent = "@echo off`ncall `"$vcvarsPath`"`nlink $linkerFlags $objList /OUT:`"$dllFile`""
-$batchFile = "$BUILD_DIR\link.bat"
-Set-Content -Path $batchFile -Value $batchContent
+Write-Host "  $($icons.Link) Linking..." -ForegroundColor Gray
 
-$result = & cmd /c $batchFile 2>&1
+# Execute link directly
+$linkCmd = "link $linkerFlags $objList /OUT:`"$dllFile`""
+$result = Invoke-Expression $linkCmd 2>&1
+
 if ($LASTEXITCODE -ne 0) {
     Write-ErrorMsg "Linking failed!"
-    Write-Host $result -ForegroundColor Red
+    Write-Host "$result" -ForegroundColor Red
     exit 1
 }
 Write-Success "Created pdex.dll"

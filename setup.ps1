@@ -46,6 +46,7 @@ function Get-Icons {
         Code = "[CODE]"     # code icon
         Settings = "[SET]"  # settings icon
         Search = "[SEARCH]"    # search icon
+        Download = "[DL]"      # download icon
         Git = "[GIT]"      # git icon
         Make = "[MAKE]"     # make icon
         VSCode = "[VSC]"    # vscode icon
@@ -260,8 +261,115 @@ function Restore-Environment {
     Write-Success "Environment restoration complete"
 }
 
+function Find-PlaydateSDK {
+    $colors = Get-Colors
+    Write-Host "  $($icons.Search) Searching for Playdate SDK..." -ForegroundColor $colors.Info
+    
+    # Priority 1: Environment Variable
+    if ($env:PLAYDATE_SDK_PATH -and (Test-Path $env:PLAYDATE_SDK_PATH)) {
+        $test = Test-PlaydateSDK -Path $env:PLAYDATE_SDK_PATH
+        if ($test.Success) { 
+             Write-Host "    $($icons.Success) Found at $($test.Path) (Environment Variable)" -ForegroundColor $colors.Success
+             return @{ Path = $test.Path; Source = "Environment Variable" }
+        }
+    }
+    
+    # Priority 2: Registry
+    $regPaths = "HKLM:\SOFTWARE\Playdate\SDK", "HKCU:\SOFTWARE\Playdate\SDK", "HKLM:\SOFTWARE\Wow6432Node\Playdate\SDK", "HKCU:\SOFTWARE\Wow6432Node\Playdate\SDK"
+    foreach ($rp in $regPaths) {
+        try {
+            $val = Get-ItemProperty -Path $rp -Name "InstallPath" -ErrorAction SilentlyContinue
+            if ($val.InstallPath -and (Test-Path $val.InstallPath)) {
+                 $test = Test-PlaydateSDK -Path $val.InstallPath
+                 if ($test.Success) {
+                     Write-Host "    $($icons.Success) Found at $($test.Path) (Windows Registry)" -ForegroundColor $colors.Success
+                     return @{ Path = $test.Path; Source = "Windows Registry" }
+                 }
+            }
+        } catch {}
+    }
+
+    # Priority 3: Combinatorial Search (Optimized)
+    # Define search space components
+    $drives = @("C:", "D:", "E:", "F:", "G:")
+    if ($env:SystemDrive -notin $drives) { $drives = @($env:SystemDrive) + $drives }
+    
+    $rootFolders = @(
+        "\", 
+        "\Program Files", 
+        "\Program Files (x86)", 
+        "\Programs",
+        "\Tools", 
+        "\Dev", 
+        "\Development",
+        "\Games"
+    )
+    
+    $sdkNames = @("PlaydateSDK", "Playdate SDK")
+    
+    $userFolders = @(
+        "$env:USERPROFILE",
+        "$env:USERPROFILE\Documents",
+        "$env:USERPROFILE\Development",
+        "$env:USERPROFILE\source",
+        "$env:LOCALAPPDATA\Programs",
+        "$env:ProgramData"
+    )
+
+    $searchList = @()
+    
+    # Build User Paths
+    foreach ($folder in $userFolders) {
+        foreach ($name in $sdkNames) {
+            $searchList += Join-Path $folder $name
+        }
+    }
+
+    # Build Drive Paths
+    foreach ($drive in $drives) {
+        foreach ($root in $rootFolders) {
+            foreach ($name in $sdkNames) {
+                $searchList += "$drive$root\$name"
+            }
+        }
+    }
+    
+    # Build Relative Paths
+    $scriptDir = Get-ScriptDirectory
+    $searchList += Join-Path $scriptDir "..\Playdate SDK"
+    $searchList += Join-Path $scriptDir "..\..\Playdate SDK"
+    $searchList += Join-Path (Split-Path $scriptDir -Parent) "Playdate SDK"
+
+    # Execute Search (Lazy Evaluation)
+    $checked = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    
+    foreach ($path in $searchList) {
+        if ([string]::IsNullOrWhiteSpace($path)) { continue }
+        # Normalize path
+        $cleanPath = $path.Replace("/", "\").TrimEnd('\')
+        
+        if (-not $checked.Contains($cleanPath)) {
+            $checked.Add($cleanPath) | Out-Null
+            # Only test if directory exists (fast check)
+            if (Test-Path $cleanPath) {
+                $test = Test-PlaydateSDK -Path $cleanPath
+                if ($test.Success) {
+                    Write-Host "    $($icons.Success) Found at $cleanPath (Auto-Search)" -ForegroundColor $colors.Success
+                    return @{ Path = $cleanPath; Source = "Auto-Search" }
+                }
+            }
+        }
+    }
+
+    return $null
+}
+
 function Test-PlaydateSDK {
     param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        Log-Message "WARN" "Playdate SDK path is null or empty"
+        return @{ Success = $false; Path = $Path }
+    }
     $pdcPath = Join-Path $Path "bin\pdc.exe"
     if (Test-Path $pdcPath) {
         Log-Message "INFO" "Playdate SDK found at $Path"
@@ -271,34 +379,140 @@ function Test-PlaydateSDK {
 }
 
 function Test-VisualStudio {
-    $basePath = "C:\Program Files\Microsoft Visual Studio\2022"
-    foreach ($edition in @("Enterprise", "Professional", "Community")) {
-        $vcvarsPath = Join-Path $basePath "$edition\VC\Auxiliary\Build\vcvars64.bat"
-        if (Test-Path $vcvarsPath) {
-            Log-Message "INFO" "Visual Studio 2022 $edition found"
-            return @{ Success = $true; Path = $vcvarsPath; Edition = $edition }
+    Log-Message "INFO" "Searching for Visual Studio..."
+    
+    # 0. Check Environment Variables (Developer Command Prompt)
+    if ($env:VSINSTALLDIR -and (Test-Path $env:VSINSTALLDIR)) {
+         $vcvarsPath = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvars64.bat"
+         if (Test-Path $vcvarsPath) {
+             Log-Message "INFO" "Visual Studio found via Environment Variable at $env:VSINSTALLDIR"
+             return @{ Success = $true; Path = $vcvarsPath; Edition = "EnvVar"; InstallPath = $env:VSINSTALLDIR }
+         }
+    }
+
+    # 1. Try using vswhere (most reliable method)
+    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vswherePath)) {
+        $vswherePath = "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe"
+    }
+
+    if (Test-Path $vswherePath) {
+        try {
+            # Search for VS with VC++ tools using JSON format for efficiency
+            $jsonOutput = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json
+            
+            if ($jsonOutput) {
+                # Handle case where ConvertFrom-Json returns an array or single object
+                if ($jsonOutput -is [array]) { $vsInfo = $jsonOutput[0] } else { $vsInfo = $jsonOutput }
+
+                $vsPath = $vsInfo.installationPath
+                if ($vsPath -and (Test-Path $vsPath)) {
+                    $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+                    if (Test-Path $vcvarsPath) {
+                        $vsName = $vsInfo.catalog.productDisplayVersion
+                        $editionId = $vsInfo.productId
+                        $edition = ($editionId -split '\.')[-1]
+                    
+                        Log-Message "INFO" "Visual Studio found via vswhere at $vsPath"
+                        return @{ Success = $true; Path = $vcvarsPath; Edition = "$edition ($vsName)"; InstallPath = $vsPath }
+                    }
+                }
+            }
+        } catch {
+            Log-Message "WARN" "vswhere execution failed: $_"
         }
     }
-    Log-Message "WARN" "Visual Studio 2022 not found"
+
+    # 2. Fallback to legacy search
+    $basePaths = @(
+        "C:\Program Files\Microsoft Visual Studio",
+        "C:\Program Files (x86)\Microsoft Visual Studio"
+    )
+    $years = @("2022", "2019", "2017")
+    $editions = @("Community", "Professional", "Enterprise", "BuildTools")
+
+    foreach ($base in $basePaths) {
+        foreach ($year in $years) {
+            foreach ($edition in $editions) {
+                $vcvarsPath = Join-Path $base "$year\$edition\VC\Auxiliary\Build\vcvars64.bat"
+                if (Test-Path $vcvarsPath) {
+                    Log-Message "INFO" "Visual Studio found at $vcvarsPath"
+                    return @{ Success = $true; Path = $vcvarsPath; Edition = "$year $edition" }
+                }
+            }
+        }
+    }
+
+    Log-Message "WARN" "Visual Studio not found"
+    return @{ Success = $false }
+}
+
+function Find-Tool {
+    param([string]$Command, [string[]]$Paths)
+    
+    # 1. PATH check
+    $cmd = Get-Command $Command -ErrorAction SilentlyContinue
+    if ($cmd) { return @{ Success = $true; Path = $cmd.Source } }
+
+    # 2. Explicit Path Search
+    $drives = @("C:", "D:", "E:", "F:", "G:")
+    if ($env:SystemDrive -notin $drives) { $drives = @($env:SystemDrive) + $drives }
+    
+    foreach ($p in $Paths) {
+        # If absolute path, check directly
+        if ($p -match "^[a-zA-Z]:") {
+             if (Test-Path $p) { return @{ Success = $true; Path = $p } }
+             continue
+        }
+        
+        # Relative pattern, check across drives and roots
+        $roots = @("\", "\Program Files", "\Program Files (x86)", "\Programs", "\Tools", "\Dev", "\Development", "\Software")
+        foreach ($d in $drives) {
+            foreach ($r in $roots) {
+                $fullPath = "$d$r\$p"
+                # Handle wildcards
+                if ($fullPath.Contains("*")) {
+                    $found = Get-ChildItem $fullPath -ErrorAction SilentlyContinue | Where-Object { -not $_.PSIsContainer } | Select-Object -First 1
+                    if ($found) { return @{ Success = $true; Path = $found.FullName } }
+                } elseif (Test-Path $fullPath) {
+                    return @{ Success = $true; Path = $fullPath }
+                }
+            }
+        }
+    }
     return @{ Success = $false }
 }
 
 function Test-VSCode {
-    $codeCmd = Get-Command code -ErrorAction SilentlyContinue
-    if ($codeCmd) { return @{ Success = $true; Path = $codeCmd.Source } }
-    return @{ Success = $false }
+    return Find-Tool -Command "code" -Paths @(
+        "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code.cmd",
+        "Microsoft VS Code\bin\code.cmd"
+    )
 }
 
 function Test-Make {
-    $makeCmd = Get-Command make -ErrorAction SilentlyContinue
-    if ($makeCmd) { return @{ Success = $true; Path = $makeCmd.Source } }
-    return @{ Success = $false }
+    return Find-Tool -Command "make" -Paths @(
+        "GnuWin32\bin\make.exe",
+        "MinGW\bin\make.exe",
+        "MinGW\bin\mingw32-make.exe",
+        "Chocolatey\bin\make.exe",
+        "ProgramData\chocolatey\bin\make.exe"
+    )
+}
+
+function Test-ArmToolchain {
+    return Find-Tool -Command "arm-none-eabi-gcc" -Paths @(
+        "GNU Arm Embedded Toolchain\*\bin\arm-none-eabi-gcc.exe",
+        "GNU Tools ARM Embedded\*\bin\arm-none-eabi-gcc.exe",
+        "Arm GNU Toolchain\*\bin\arm-none-eabi-gcc.exe"
+    )
 }
 
 function Test-Git {
-    $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-    if ($gitCmd) { return @{ Success = $true; Path = $gitCmd.Source } }
-    return @{ Success = $false }
+    return Find-Tool -Command "git" -Paths @(
+        "Git\cmd\git.exe",
+        "Git\bin\git.exe"
+    )
 }
 
 function Set-EnvironmentVariable {
@@ -308,9 +522,34 @@ function Set-EnvironmentVariable {
         if ($existingValue -eq $Value) { return $true }
         [Environment]::SetEnvironmentVariable($Name, $Value, $Scope)
         $script:ChangesMade += @{ Type = "EnvVar"; Name = $Name; Value = $Value }
-        Log-Message "INFO" "Setting environment variable $Name"
+        Log-Message "INFO" "Setting environment variable $Name to $Value (Scope: $Scope)"
         return $true
     } catch { $err = $_; Log-Message "ERROR" "Failed to set ${Name}: $err"; return $false }
+}
+
+function Get-EnvironmentVariables {
+    param([string]$VarName = "PLAYDATE_SDK_PATH")
+    $vars = @{
+        User = [Environment]::GetEnvironmentVariable($VarName, "User")
+        Machine = [Environment]::GetEnvironmentVariable($VarName, "Machine")
+        Process = [Environment]::GetEnvironmentVariable($VarName, "Process")
+    }
+    return $vars
+}
+
+function Test-EnvironmentVariable {
+    param([string]$VarName = "PLAYDATE_SDK_PATH")
+    $vars = Get-EnvironmentVariables -VarName $VarName
+    $validPaths = @()
+    
+    foreach ($scope in @("Machine", "User", "Process")) {
+        $path = $vars[$scope]
+        if ($path -and (Test-PlaydateSDK -Path $path).Success) {
+            $validPaths += @{ Scope = $scope; Path = $path }
+        }
+    }
+    
+    return $validPaths
 }
 
 function Add-ToPath {
@@ -335,6 +574,72 @@ function Start-Simulator {
         Start-Process -FilePath $simulatorPath -ArgumentList "`"$PDXPath`""
         return $true
     } catch { return $false }
+}
+
+function Install-PlaydateSDK {
+    param([string]$InstallPath = "")
+    $colors = Get-Colors
+    
+    if ([string]::IsNullOrWhiteSpace($InstallPath)) {
+        $InstallPath = "$env:ProgramFiles\Playdate SDK"
+    }
+    
+    Write-Host "  $($icons.Download) Downloading Playdate SDK..." -ForegroundColor $colors.Info
+    
+    try {
+        # Create temporary directory for download
+        $tempDir = Join-Path $env:TEMP "PlaydateSDK_$(Get-Date -Format 'yyyyMMddHHmmss')"
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        
+        # Download URL (this would need to be updated with actual SDK URL)
+        $sdkUrl = "https://download.panic.com/playdate_sdk/PlaydateSDK.zip"
+        $zipPath = Join-Path $tempDir "PlaydateSDK.zip"
+        
+        # Download using Invoke-WebRequest
+        Write-Host "    Downloading from: $sdkUrl" -ForegroundColor $colors.Info
+        Invoke-WebRequest -Uri $sdkUrl -OutFile $zipPath -UseBasicParsing
+        
+        # Extract ZIP
+        Write-Host "    Extracting SDK..." -ForegroundColor $colors.Info
+        Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+        
+        # Find extracted SDK directory
+        $extractedDir = Get-ChildItem -Path $tempDir -Directory | Where-Object { $_.Name -like "*Playdate*" } | Select-Object -First 1
+        
+        if ($extractedDir) {
+            # Create installation directory if it doesn't exist
+            if (-not (Test-Path $InstallPath)) {
+                New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
+            }
+            
+            # Move SDK files to installation directory
+            Write-Host "    Installing to: $InstallPath" -ForegroundColor $colors.Info
+            Copy-Item -Path "$($extractedDir.FullName)\*" -Destination $InstallPath -Recurse -Force
+            
+            # Clean up temporary files
+            Remove-Item -Path $tempDir -Recurse -Force
+            
+            # Verify installation
+            $testResult = Test-PlaydateSDK -Path $InstallPath
+            if ($testResult.Success) {
+                Write-Host "    $($icons.Success) SDK installed successfully!" -ForegroundColor $colors.Success
+                return @{ Success = $true; Path = $InstallPath }
+            } else {
+                Write-Host "    $($icons.Error) Installation verification failed" -ForegroundColor $colors.Error
+                return @{ Success = $false }
+            }
+        } else {
+            Write-Host "    $($icons.Error) Could not find extracted SDK directory" -ForegroundColor $colors.Error
+            return @{ Success = $false }
+        }
+    } catch {
+        Write-Host "    $($icons.Error) Download/installation failed: $_" -ForegroundColor $colors.Error
+        # Clean up on error
+        if (Test-Path $tempDir) {
+            Remove-Item -Path $tempDir -Recurse -Force
+        }
+        return @{ Success = $false }
+    }
 }
 
 function Show-Menu {
@@ -421,48 +726,129 @@ Start-Animation "Waking up setup wizard..." 1
 function Show-Summary {
     param([hashtable]$Results)
     $colors = Get-Colors
+    
     $elapsedTime = New-TimeSpan -Start $script:StartTime -End (Get-Date)
     $timeStr = $elapsedTime.ToString("mm\:ss")
-
-    Write-Host "`n"
-    Speak-Message "All done! That took $timeStr." "Success"
-
-    Write-Host "`n  [ REPORT CARD ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
-
+    
     $checks = @(
         @{ Name = "Playdate SDK"; Result = $Results.SDK },
         @{ Name = "Environment"; Result = $Results.EnvVar },
         @{ Name = "Visual Studio"; Result = $Results.VS },
+        @{ Name = "ARM Compiler"; Result = $Results.Arm },
         @{ Name = "VS Code"; Result = $Results.VSCode },
         @{ Name = "Make"; Result = $Results.Make },
         @{ Name = "Git"; Result = $Results.Git }
     )
 
-    foreach ($check in $checks) {
-        Write-Host "  $($check.Name.PadRight(14))" -NoNewline -ForegroundColor Gray
-        if ($check.Result.Success) { Write-Host " [PASS]" -ForegroundColor $colors.Success }
-        elseif ($check.Result.Success -eq $false -and $check.Result.Optional) { Write-Host " [WARN]" -ForegroundColor $colors.Warning }
-        else { Write-Host " [FAIL]" -ForegroundColor $colors.Error }
+    $actions = @(
+        @{ Label = "Show Cheat Sheet"; Code = "CheatSheet"; Desc = "View build commands" },
+        @{ Label = "Open VS Code"; Code = "VSCode"; Desc = "Launch project editor" },
+        @{ Label = "Read Guide"; Code = "Docs"; Desc = "Open GETTING_STARTED.md" },
+        @{ Label = "Explore Code"; Code = "Explorer"; Desc = "Open src folder" },
+        @{ Label = "Exit"; Code = "Exit"; Desc = "Close wizard" }
+    )
+    
+    $selection = 0
+    $firstRun = $true
+    
+    # Clear input buffer to prevent skipping
+    while ($Host.UI.RawUI.KeyAvailable) { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyUp") }
+
+    while ($true) {
+        if ($firstRun) {
+            Clear-Host
+            Show-AsciiArt
+            Speak-Message "Setup complete! (Time: $timeStr)" "Success"
+            
+            Write-Host "`n  [ REPORT CARD ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
+            
+            # Animation for first run
+            foreach ($check in $checks) {
+                Write-Host "  $($check.Name.PadRight(14))" -NoNewline -ForegroundColor Gray
+                if ($check.Result.Success) { Write-Host " [PASS]" -ForegroundColor $colors.Success }
+                elseif ($check.Result.Success -eq $false -and $check.Result.Optional) { Write-Host " [WARN]" -ForegroundColor $colors.Warning }
+                else { Write-Host " [FAIL]" -ForegroundColor $colors.Error }
+                Start-Sleep -Milliseconds 50
+            }
+            
+            if (-not $Results.Arm.Success) {
+                Write-Typewriter "  Note: ARM Compiler is missing. Device builds disabled." "Info" 10
+            }
+            
+            $firstRun = $false
+            # Another buffer clear just in case user mashed keys during animation
+            while ($Host.UI.RawUI.KeyAvailable) { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyUp") }
+        }
+        else {
+            # Static Redraw (No Animation)
+            Clear-Host
+            Show-AsciiArt
+            # Re-print header to maintain context
+            Write-Host "`n  [ REPORT CARD ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
+            foreach ($check in $checks) {
+                Write-Host "  $($check.Name.PadRight(14))" -NoNewline -ForegroundColor Gray
+                if ($check.Result.Success) { Write-Host " [PASS]" -ForegroundColor $colors.Success }
+                elseif ($check.Result.Success -eq $false -and $check.Result.Optional) { Write-Host " [WARN]" -ForegroundColor $colors.Warning }
+                else { Write-Host " [FAIL]" -ForegroundColor $colors.Error }
+            }
+            if (-not $Results.Arm.Success) { Write-Host "  Note: ARM Compiler is missing." -ForegroundColor (Get-Colors).Info }
+        }
+
+        # Draw Menu (Always visible below report card)
+        Write-Host "`n  [ DIRECTOR'S CUT ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
+        
+        for ($i = 0; $i -lt $actions.Count; $i++) {
+            $act = $actions[$i]
+            if ($i -eq $selection) {
+                Write-Host "  $($icons.Arrow) $($act.Label)" -ForegroundColor $colors.Highlight -NoNewline
+                Write-Host "  $($act.Desc)" -ForegroundColor $colors.Step
+            } else {
+                Write-Host "    $($act.Label)" -ForegroundColor Gray -NoNewline
+                Write-Host "  $($act.Desc)" -ForegroundColor DarkGray
+            }
+        }
+        
+        Write-Host "`n  [UP/DOWN] Select   [ENTER] Confirm" -ForegroundColor DarkGray
+
+        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        
+        switch ($key.VirtualKeyCode) {
+            38 { if ($selection -gt 0) { $selection-- } else { $selection = $actions.Count - 1 } } # Up
+            40 { if ($selection -lt $actions.Count - 1) { $selection++ } else { $selection = 0 } } # Down
+            13 { # Enter
+                $code = $actions[$selection].Code
+                if ($code -eq "Exit") { return }
+                
+                if ($code -eq "CheatSheet") {
+                    Clear-Host
+                    Show-AsciiArt
+                    Write-Host "`n  [ CHEAT SHEET ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
+                    Write-Host "`n  Build & Run:     .\build.ps1 -Run" -ForegroundColor $colors.Text
+                    Write-Host "  Build Only:      .\build.ps1" -ForegroundColor $colors.Text
+                    Write-Host "  Clean Build:     .\build.ps1 -Clean" -ForegroundColor $colors.Text
+                    Speak-Message "Got it? Press any key to go back." "Info"
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                }
+                elseif ($code -eq "VSCode") {
+                    if ($Results.VSCode.Success) { 
+                        code . 
+                        Speak-Message "VS Code launching..." "Success"
+                        Start-Sleep -Seconds 1
+                    } else { 
+                        Speak-Message "VS Code is not installed or configured." "Error" 
+                        Start-Sleep -Seconds 2
+                    }
+                }
+                elseif ($code -eq "Docs") {
+                    $docPath = Join-Path $scriptDir "docs\GETTING_STARTED.md"
+                    if (Test-Path $docPath) { Invoke-Item $docPath } else { Write-Warning "Docs missing" }
+                }
+                elseif ($code -eq "Explorer") {
+                    Invoke-Item (Join-Path $scriptDir "src")
+                }
+            }
+        }
     }
-
-    Write-Host "`n  [ CHEAT SHEET ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
-    $buildCmd = ".\build.ps1"
-    Write-Host "  Build & Run:     " -NoNewline -ForegroundColor Gray
-    Write-Host "$buildCmd -Run" -ForegroundColor $colors.Highlight
-    Write-Host "  Build Only:      " -NoNewline -ForegroundColor Gray
-    Write-Host "$buildCmd" -ForegroundColor $colors.Highlight
-    Write-Host "  Clean Build:     " -NoNewline -ForegroundColor Gray
-    Write-Host "$buildCmd -Clean" -ForegroundColor $colors.Highlight
-
-    Write-Host "`n  [ WHAT'S NEXT ]" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
-    Write-Host "  1. Read GETTING_STARTED.md (It's short, I promise!)" -ForegroundColor Gray
-    Write-Host "  2. Edit src/main.c to make your game." -ForegroundColor Gray
-    Write-Host "  3. Crank that simulator!" -ForegroundColor $colors.Highlight
-
-    if ($script:LogFilePath) { Write-Host "`n  Log file: $script:LogFilePath" -ForegroundColor $colors.Info }
-
-    Speak-Message "Now go make something awesome!" "Success"
-    Write-Host ""
 }
 
 $scriptDir = Get-ScriptDirectory
@@ -482,29 +868,81 @@ Clear-Host
 function Show-AsciiArt {
     $colors = Get-Colors
     $art = @"
-     _______
-    |       |  PLAYDATE C
-    |  ___  |  SETUP WIZARD
-    | |   | |
-    | |___| |  v$script:Version
-    |       |
-    |   +   |  (C)rank it!
-    |_______|
+      ___________
+     |  _______  |  PLAYDATE C
+     | |       | |  SETUP WIZARD
+     | |_______| |__
+     |      @    |  | v$script:Version
+     |   _    O  |  |
+     | _| |_  O  |  |
+     ||_   _|    |__| (C)rank it!
+     |  |_|      |
+     |___________|
 "@
     Write-Host $art -ForegroundColor $colors.Highlight
 }
 
+function Get-Faces {
+    return @{
+        Happy    = "(^_^)"
+        Success  = "(*^v^*)"
+        Excited  = "\(^o^)/"
+        Warning  = "(>_<)"
+        Error    = "(T_T)"
+        Info     = "(o_o)"
+        Confused = "(?_?)"
+        Sleepy   = "(-.-)Zzz"
+        Cool     = "(^_~)d"
+    }
+}
+
 function Speak-Message {
-    param([string]$Message, [string]$Color = "Cyan")
+    param([string]$Message, [string]$Color = "Title", [string]$Mood = "")
     $colors = Get-Colors
-    $face = "(^_^)"
-    Write-Host "`n  $face $Message" -ForegroundColor $colors.$Color
+    $faces = Get-Faces
+    
+    # Robustness: Map legacy/invalid colors to valid theme keys
+    if (-not $colors.ContainsKey($Color)) {
+        switch ($Color) {
+            "Cyan"      { $Color = "Title" }
+            "Excited"   { $Color = "Highlight" }
+            default     { $Color = "Text" }
+        }
+    }
+    
+    # Auto-detect mood if not provided
+    if (-not $Mood) {
+        switch ($Color) {
+            "Success"   { $Mood = "Success" }
+            "Error"     { $Mood = "Error" }
+            "Warning"   { $Mood = "Warning" }
+            "Info"      { $Mood = "Info" }
+            "Title"     { $Mood = "Happy" }
+            "Highlight" { $Mood = "Excited" }
+            default     { $Mood = "Happy" }
+        }
+    }
+
+    $face = if ($faces.ContainsKey($Mood)) { $faces[$Mood] } else { $faces.Happy }
+    
+    # Final safety check before output
+    $consoleColor = if ($colors.ContainsKey($Color)) { $colors.$Color } else { [System.ConsoleColor]::White }
+    Write-Host "`n  $face $Message" -ForegroundColor $consoleColor
 }
 
 function Start-Level {
     param([string]$Title, [int]$Level, [int]$Total)
-    $colors = Get-Colors
-    $p = "+" * $Level + "-" * ($Total - $Level)
+    $colors = Get-Colors    
+    
+    # UX Pacing: Brief pause between levels so user can track progress
+    if ($script:ExecutionMode -ne 'silent') { Start-Sleep -Milliseconds 800 }
+
+    # Ensure progress doesn't go negative
+    if ($Level -gt $Total) { $Total = $Level }
+    $remaining = $Total - $Level
+    if ($remaining -lt 0) { $remaining = 0 }
+
+    $p = "+" * $Level + "-" * $remaining
     Write-Host "`n  [ LEVEL $Level / $Total ] $Title" -ForegroundColor $colors.Highlight -BackgroundColor $colors.Border
     Write-Host "  $p" -ForegroundColor $colors.Step
 }
@@ -514,6 +952,7 @@ Write-Host "`n$($icons.Bullet) This wizard will help you with:" -ForegroundColor
 Write-Host "`n  $($icons.Arrow) $($icons.SDK) Check system for required tools and SDK" -ForegroundColor $colors.Text
 Write-Host "  $($icons.Arrow) $($icons.Env) Configure Playdate SDK environment variables" -ForegroundColor $colors.Text
 Write-Host "  $($icons.Arrow) $($icons.VS) Verify Visual Studio installation" -ForegroundColor $colors.Text
+Write-Host "  $($icons.Arrow) $($icons.Code) Check for ARM GCC Toolchain (for device)" -ForegroundColor $colors.Text
 Write-Host "  $($icons.Arrow) $($icons.Make) Check additional dependencies (make, git)" -ForegroundColor $colors.Text
 Write-Host "  $($icons.Arrow) $($icons.Play) Build and run the demo game" -ForegroundColor $colors.Text
 Write-Host "  $($icons.Arrow) $($icons.VSCode) Configure VS Code (if installed)" -ForegroundColor $colors.Text
@@ -558,10 +997,10 @@ if ($Mode -eq 'interactive') {
         $script:ExecutionMode = $Mode
         # Recalculate total steps based on selected mode
         $stepCounts = @{
-            check = 2
+            check = 3
             env = 3
             build = 5
-            vscode = 4
+            vscode = 5
             repair = 6
             interactive = 6
         }
@@ -573,6 +1012,17 @@ if ($Mode -eq 'interactive') {
 if ($Mode -ne 'interactive' -and $Mode -ne 'silent') {
     # If specific mode is selected (check, env, build, etc.), continue automatically
     Log-Message "INFO" "Running in $Mode mode"
+    # Recalculate steps for non-interactive mode too
+    $stepCounts = @{
+        check = 3
+        env = 3
+        build = 5
+        vscode = 5
+        repair = 6
+        interactive = 6
+    }
+    $totalSteps = $stepCounts[$Mode]
+    if (-not $totalSteps) { $totalSteps = 6 }
 }
 
 $results = @{
@@ -582,6 +1032,7 @@ $results = @{
     VSCode = @{ Success = $false; Optional = $true }
     Make = @{ Success = $false; Optional = $true }
     Git = @{ Success = $false; Optional = $true }
+    Arm = @{ Success = $false; Optional = $true }
 }
 
 $currentStep = 1
@@ -591,34 +1042,71 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
     Start-Level "Detecting Playdate SDK" $currentStep $totalSteps
     $currentStep++
 
-    $sdkPath = $env:PLAYDATE_SDK_PATH
-    $detectedSdkPath = (Get-Item $scriptDir).Parent.Parent.FullName
-
-    $sdkTest = Test-PlaydateSDK -Path $sdkPath
-    if (-not $sdkTest.Success -and $sdkPath) { $sdkTest = Test-PlaydateSDK -Path $detectedSdkPath }
-
-    if ($sdkTest.Success) {
-        $script:DetectedSDKPath = $sdkTest.Path
-        $results.SDK = @{ Success = $true; Path = $sdkTest.Path }
-        Speak-Message "Found the Playdate SDK at $($sdkTest.Path)! Nice." "Success"
-        Log-Message "INFO" "SDK detection successful"
+    # Use the enhanced SDK detection
+    $foundSDK = Find-PlaydateSDK
+    
+    if ($foundSDK) {
+        $script:DetectedSDKPath = $foundSDK.Path
+        $results.SDK = @{ Success = $true; Path = $foundSDK.Path; Source = $foundSDK.Source }
+        Speak-Message "Found the Playdate SDK at $($foundSDK.Path)! Nice." "Success"
+        Log-Message "INFO" "SDK detection successful via $($foundSDK.Source)"
     } else {
         if ($Mode -eq 'silent') {
             Write-ErrorMsg "Cannot find SDK in silent mode. Please set PLAYDATE_SDK_PATH first"
             Log-Message "ERROR" "Playdate SDK not found in silent mode"
         } else {
-            Speak-Message "I couldn't find the Playdate SDK." "Error"
-            Write-Info "Download from: https://play.date/dev/"
-            $manualPath = Read-Host "`n$($icons.Search) Enter Playdate SDK path (or Ctrl+C to exit)"
-            $sdkTest = Test-PlaydateSDK -Path $manualPath
-            if ($sdkTest.Success) {
-                $script:DetectedSDKPath = $sdkTest.Path
-                $results.SDK = @{ Success = $true; Path = $sdkTest.Path }
-                Write-Success "Verified: $($sdkTest.Path)"
+            Speak-Message "I couldn't find the Playdate SDK automatically." "Warning"
+            Write-Info "The system searched in common locations, registry, and environment variables."
+            
+            # Offer automatic download
+            $autoDownload = Read-Confirmation "Would you like me to download and install the SDK automatically?" -HelpText "This will download the latest Playdate SDK from the official website."
+            if ($autoDownload) {
+                $installResult = Install-PlaydateSDK
+                if ($installResult.Success) {
+                    $script:DetectedSDKPath = $installResult.Path
+                    $results.SDK = @{ Success = $true; Path = $installResult.Path; Source = "Auto-Install" }
+                    Speak-Message "SDK installed successfully at $($installResult.Path)!" "Success"
+                    Log-Message "INFO" "SDK auto-installed at $($installResult.Path)"
+                } else {
+                    Speak-Message "Automatic installation failed. Let's try manual setup." "Error"
+                    Write-Info "Download from: https://play.date/dev/"
+                    $manualPath = Read-Host "`n$($icons.Search) Enter Playdate SDK path (or Ctrl+C to exit)"
+                    $sdkTest = Test-PlaydateSDK -Path $manualPath
+                    if ($sdkTest.Success) {
+                        $script:DetectedSDKPath = $sdkTest.Path
+                        $results.SDK = @{ Success = $true; Path = $sdkTest.Path; Source = "Manual" }
+                        Write-Success "Verified: $($sdkTest.Path)"
+                    } else {
+                        Write-ErrorMsg "Invalid SDK path: $manualPath"
+                    }
+                }
             } else {
-                Write-ErrorMsg "Invalid SDK path: $manualPath"
+                Write-Info "Download from: https://play.date/dev/"
+                $manualPath = Read-Host "`n$($icons.Search) Enter Playdate SDK path (or Ctrl+C to exit)"
+                $sdkTest = Test-PlaydateSDK -Path $manualPath
+                if ($sdkTest.Success) {
+                    $script:DetectedSDKPath = $sdkTest.Path
+                    $results.SDK = @{ Success = $true; Path = $sdkTest.Path; Source = "Manual" }
+                    Write-Success "Verified: $($sdkTest.Path)"
+                } else {
+                    Write-ErrorMsg "Invalid SDK path: $manualPath"
+                }
             }
         }
+    }
+}
+
+function Press-Any-Key {
+    if ($script:ExecutionMode -eq 'interactive') {
+        Write-Host "`n  $($icons.Play) Press any key to continue..." -ForegroundColor DarkGray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+}
+
+function Open-Browser {
+    param([string]$Url)
+    if ($script:ExecutionMode -ne 'silent' -and (Read-Confirmation "Open download page now?" -DefaultYes $true)) {
+        Start-Process $Url
     }
 }
 
@@ -632,7 +1120,9 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
         Speak-Message "Found Visual Studio 2022 $($vsTest.Edition)!" "Success"
     } else {
         Speak-Message "Visual Studio 2022 is missing." "Warning"
-        Write-Info "Download from: https://visualstudio.microsoft.com/downloads/"
+        Write-Info "We need the C++ compiler."
+        Open-Browser "https://visualstudio.microsoft.com/downloads/"
+        
         if ($Mode -ne 'silent' -and (Read-Confirmation "Do you have Visual Studio in a custom location?" -HelpText "If you installed VS to a non-default path, enter it here")) {
             $customPath = Read-Host "$($icons.Search) Enter full path to vcvars64.bat"
             if (Test-Path $customPath) {
@@ -654,9 +1144,21 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
     if ($makeTest.Success) { $results.Make = @{ Success = $true; Optional = $true }; Speak-Message "Found Make!" "Success" }
     else { $results.Make = @{ Success = $false; Optional = $true }; Speak-Message "Make not found (optional)" "Info" }
 
+    $armTest = Test-ArmToolchain
+    if ($armTest.Success) { 
+        $results.Arm = @{ Success = $true; Optional = $true }
+        Speak-Message "Found ARM Toolchain (for device builds)!" "Success" 
+    } else { 
+        $results.Arm = @{ Success = $false; Optional = $true }
+        Speak-Message "ARM Toolchain missing (needed for device builds)" "Info"
+        Open-Browser "https://developer.arm.com/downloads/-/gnu-rm"
+    }
+
     $gitTest = Test-Git
     if ($gitTest.Success) { $results.Git = @{ Success = $true; Optional = $true }; Speak-Message "Found Git!" "Success" }
     else { $results.Git = @{ Success = $false; Optional = $true }; Speak-Message "Git not found (optional)" "Info" }
+
+    Press-Any-Key
 }
 
 if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
@@ -664,11 +1166,12 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
     $currentStep++
 
     $envConfigured = $false
-    $currentSdkPath = [Environment]::GetEnvironmentVariable("PLAYDATE_SDK_PATH", "Machine")
-
-    if ($currentSdkPath -and (Test-PlaydateSDK -Path $currentSdkPath).Success) {
-        Speak-Message "Environment variable is already good to go!" "Success"
-        $results.EnvVar = @{ Success = $true; Path = $currentSdkPath }
+    $existingEnvVars = Test-EnvironmentVariable
+    
+    if ($existingEnvVars.Count -gt 0) {
+        $bestEnvVar = $existingEnvVars[0]
+        Speak-Message "Environment variable already configured! $($bestEnvVar.Scope) scope." "Success"
+        $results.EnvVar = @{ Success = $true; Path = $bestEnvVar.Path; Scope = $bestEnvVar.Scope }
         $envConfigured = $true
     } elseif ($script:DetectedSDKPath) {
         if ($Mode -eq 'check') {
@@ -687,7 +1190,7 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
                 if (Set-EnvironmentVariable -Name "PLAYDATE_SDK_PATH" -Value $script:DetectedSDKPath) {
                     if (Add-ToPath -Path "$script:DetectedSDKPath\bin") {
                         $envConfigured = $true
-                        $results.EnvVar = @{ Success = $true; Path = $script:DetectedSDKPath }
+                        $results.EnvVar = @{ Success = $true; Path = $script:DetectedSDKPath; Scope = "Machine" }
                         Speak-Message "Done! Restart your terminal to see the changes." "Success"
                     }
                 }
@@ -696,10 +1199,12 @@ if ($Mode -in @('interactive', 'check', 'env', 'build', 'repair', 'vscode')) {
                 $env:Path = "$env:Path;$script:DetectedSDKPath\bin"
                 $envConfigured = $true
                 Speak-Message "Okay, I set it just for this session." "Info"
-                $results.EnvVar = @{ Success = $true; Path = $script:DetectedSDKPath }
+                $results.EnvVar = @{ Success = $true; Path = $script:DetectedSDKPath; Scope = "Process" }
             }
         }
     }
+    
+    Press-Any-Key
 }
 
 if ($Mode -in @('interactive', 'build', 'repair', 'vscode')) {
@@ -731,9 +1236,14 @@ if ($Mode -in @('interactive', 'build', 'repair')) {
         if (Test-Path $buildScript) {
             Log-Message "INFO" "Starting build process"
             $env:PLAYDATE_SDK_PATH = $script:DetectedSDKPath
+            
+            # UX: Show spinner instead of raw build log
+            Write-Host "  $($icons.Settings) Cranking the build machine..." -NoNewline -ForegroundColor Gray
+            
             try {
-                & $buildScript -Clean 2>&1 | Out-Host
+                $buildOutput = & $buildScript -Clean 2>&1
                 if ($LASTEXITCODE -eq 0) {
+                    Write-Host " [OK]" -ForegroundColor Green
                     Speak-Message "Build successful! High five!" "Success"
                     $shouldRun = if ($Mode -eq 'silent') { $false } else { Read-Confirmation "Launch the game?" -HelpText "Opens the Playdate Simulator."}
                     if ($shouldRun) {
@@ -745,7 +1255,11 @@ if ($Mode -in @('interactive', 'build', 'repair')) {
                         }
                     }
                 } else {
-                    Speak-Message "Build failed. Check the errors above." "Error"
+                    Write-Host " [FAIL]" -ForegroundColor Red
+                    Speak-Message "Build failed. Here is what happened:" "Error"
+                    Write-Host "----------------------------------------" -ForegroundColor DarkRed
+                    $buildOutput | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+                    Write-Host "----------------------------------------" -ForegroundColor DarkRed
                 }
             } catch { $err = $_; Write-ErrorMsg "Build error: $err" }
         } else {
@@ -780,6 +1294,23 @@ if ($Mode -in @('interactive', 'repair', 'vscode')) {
 
 # Show completion animation
 Start-Animation "Setup completing..." 1
+
+if ($Mode -eq 'interactive') {
+    Write-Host "`n  Press any key to view the report card..." -ForegroundColor Gray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Clear-Host
+    Show-AsciiArt
+}
+
+function Write-Typewriter {
+    param([string]$Text, [string]$Color = "Cyan", [int]$Speed = 15)
+    $colors = Get-Colors
+    $Text.ToCharArray() | ForEach-Object {
+        Write-Host $_ -NoNewline -ForegroundColor $colors.$Color
+        if ($Speed -gt 0) { Start-Sleep -Milliseconds $Speed }
+    }
+    Write-Host ""
+}
 
 Show-Summary -Results $results
 Log-Message "INFO" "Setup wizard completed"
