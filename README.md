@@ -83,8 +83,8 @@ Your changes will compile and run in seconds! ⚡
 ├── 🧪 test.ps1                     # Run tests
 │
 ├── 📖 README.md                    # Quick start (you are here!)
-├── 📖 GETTING_STARTED.md           # Learning resources & examples
-├── 📖 DEVELOPER_GUIDE.md           # Advanced topics
+├── 📖 docs/GETTING_STARTED.md      # Learning resources & examples
+├── 📖 docs/DEVELOPER_GUIDE.md      # Advanced topics
 │
 ├── 📦 setup-config.json            # Project configuration (auto-created)
 ├── 📄 CMakeLists.txt               # Alternative CMake build (optional)
@@ -109,7 +109,7 @@ Your changes will compile and run in seconds! ⚡
 - `setup.ps1` - Initialize environment (run this first!)
 - `build.ps1` - Compile your game
 - `src/main.c` - Your actual game code
-- `GETTING_STARTED.md` - Playdate C API tutorial
+- `docs/GETTING_STARTED.md` - Playdate C API tutorial
 
 ## 🎓 Your Learning Path
 
@@ -122,13 +122,13 @@ START HERE
     ↓
 [2] See: Demo game bouncing in simulator
     ↓
-[3] Read: GETTING_STARTED.md (30 minutes)
+[3] Read: docs/GETTING_STARTED.md (30 minutes)
     ↓
 [4] Edit: src/main.c (change text, add colors)
     ↓
 [5] Build: .\build.ps1 -Run
     ↓
-[6] Learn: Playdate APIs in GETTING_STARTED.md
+[6] Learn: Playdate APIs in docs/GETTING_STARTED.md
     ↓
 [7] Make: Your awesome game! 🎮
 ```
@@ -328,8 +328,8 @@ Should output something like: `C:\path\to\PlaydateSDK`
 
 ### Still stuck? 🤔
 
-1. 📖 Check [GETTING_STARTED.md](GETTING_STARTED.md) for API examples
-2. 📚 Read [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for advanced topics
+1. 📖 Check [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) for API examples
+2. 📚 Read [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for advanced topics
 3. 💬 Visit [Playdate Developer Forum](https://devforum.play.date/)
 4. 🆘 Search GitHub issues for similar problems
 
@@ -338,9 +338,9 @@ Should output something like: `C:\path\to\PlaydateSDK`
 | Document | Purpose | Read When |
 |----------|---------|-----------|
 | **[README.md](README.md)** | Quick start guide | First time (you are here!) |
-| **[GETTING_STARTED.md](GETTING_STARTED.md)** | API tutorial & examples | Learning Playdate C |
-| **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** | Advanced workflows | Going deeper |
-| **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** | Share your game | Before publishing |
+| **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** | API tutorial & examples | Learning Playdate C |
+| **[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** | Advanced workflows | Going deeper |
+| **[docs/PUBLISHING_GUIDE.md](docs/PUBLISHING_GUIDE.md)** | Share your game | Before publishing |
 
 ### Quick Links
 

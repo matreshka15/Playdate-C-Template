@@ -84,8 +84,8 @@
 │
 ├── 📖 README.md                    # 快速开始（英文）
 ├── 📖 README.zh-cn.md              # 快速开始（中文）
-├── 📖 GETTING_STARTED.md           # 学习资源和示例
-├── 📖 DEVELOPER_GUIDE.md           # 高级主题
+├── 📖 docs/GETTING_STARTED.md      # 学习资源和示例
+├── 📖 docs/DEVELOPER_GUIDE.md      # 高级主题
 │
 ├── 📦 setup-config.json            # 项目配置（自动生成）
 ├── 📄 CMakeLists.txt               # CMake 构建配置（可选）
@@ -110,7 +110,7 @@
 - `setup.ps1` - 初始化环境（首先运行这个！）
 - `build.ps1` - 编译你的游戏
 - `src/main.c` - 你的实际游戏代码
-- `GETTING_STARTED.md` - Playdate C API 教程
+- `docs/GETTING_STARTED.md` - Playdate C API 教程
 
 ## 🎓 你的学习路径
 
@@ -123,13 +123,13 @@
     ↓
 [2] 查看：演示游戏在模拟器中弹跳
     ↓
-[3] 阅读：GETTING_STARTED.md（30 分钟）
+[3] 阅读：docs/GETTING_STARTED.md（30 分钟）
     ↓
 [4] 编辑：src/main.c（改变文字、添加颜色）
     ↓
 [5] 构建：.\build.ps1 -Run
     ↓
-[6] 学习：GETTING_STARTED.md 中的 Playdate API
+[6] 学习：docs/GETTING_STARTED.md 中的 Playdate API
     ↓
 [7] 创作：你的超棒游戏！🎮
 ```
@@ -329,8 +329,8 @@ $env:PLAYDATE_SDK_PATH
 
 ### 仍然卡住？🤔
 
-1. 📖 查看 [GETTING_STARTED.md](GETTING_STARTED.md) 获取 API 示例
-2. 📚 阅读 [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) 获取高级主题
+1. 📖 查看 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) 获取 API 示例
+2. 📚 阅读 [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) 获取高级主题
 3. 💬 访问 [Playdate 开发者论坛](https://devforum.play.date/)
 4. 🆘 在 GitHub 中搜索类似问题
 
@@ -340,9 +340,9 @@ $env:PLAYDATE_SDK_PATH
 |------|------|---------|
 | **[README.md](README.md)** | 快速开始指南（英文）| 首次使用 |
 | **[README.zh-cn.md](README.zh-cn.md)** | 快速开始指南（中文）| 首次使用（你在这里！） |
-| **[GETTING_STARTED.md](GETTING_STARTED.md)** | API 教程和示例 | 学习 Playdate C |
-| **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** | 高级工作流 | 深入学习 |
-| **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** | 分享你的游戏 | 发布前 |
+| **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** | API 教程和示例 | 学习 Playdate C |
+| **[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** | 高级工作流 | 深入学习 |
+| **[docs/PUBLISHING_GUIDE.md](docs/PUBLISHING_GUIDE.md)** | 分享你的游戏 | 发布前 |
 
 ### 快速链接
 

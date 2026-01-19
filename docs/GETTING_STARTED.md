@@ -19,7 +19,14 @@ Welcome! This guide will teach you everything you need to know to make Playdate 
 
 ## 🏁 Your First Steps
 
-### 1. Look at the Demo Code
+### 1. Setup Your Environment
+
+If you haven't already, run the "Setup Buddy" to get everything ready!
+1. Right-click `setup.ps1` and select **"Run with PowerShell"**.
+2. Select **[1] Everything!** to install tools and configure your environment.
+3. The Setup Buddy will check your SDK, Visual Studio, and environment variables.
+
+### 2. Look at the Demo Code
 
 Open `src/main.c`. You'll see:
 
@@ -29,7 +36,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 
 This is the **entry point** - where your game starts! 🚪
 
-### 2. The Game Loop
+### 3. The Game Loop
 
 ```c
 static int update(void* userdata) {
@@ -46,7 +53,7 @@ static int update(void* userdata) {
 
 This function runs **30 times per second**! That's how games work! ⚡
 
-### 3. Make a Change!
+### 4. Make a Change!
 
 Try this: In `src/main.c`, find the text "My Playdate Game!" and change it to your name!
 
@@ -54,7 +61,7 @@ Try this: In `src/main.c`, find the text "My Playdate Game!" and change it to yo
 const char* text = "Hello [Your Name]!";
 ```
 
-Now build and run:
+Now build and run using our friendly build tool:
 ```powershell
 .\build.ps1 -Run
 ```
