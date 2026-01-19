@@ -1,209 +1,393 @@
 # 🎮 Playdate C Game Template
 
-> A friendly, beginner-friendly template for making Playdate games in C!
+<div align="center">
+
+[English](README.md) · [中文](README.zh-cn.md)
+
+A complete, beginner-friendly template for making Playdate games in pure C!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Playdate SDK](https://img.shields.io/badge/Playdate-SDK-yellow)](https://play.date/dev/)
+[![Playdate SDK](https://img.shields.io/badge/Playdate-SDK%202.0%2B-blue)](https://play.date/dev/)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.0%2B-00A4EF)](https://microsoft.com/powershell)
+[![VS 2022](https://img.shields.io/badge/Visual%20Studio-2022-9146FF)](https://visualstudio.microsoft.com)
 
-**No CMake needed!** Just run one script and you're ready to go! ✨
+**🎯 No CMake. No headaches. Just code!**
 
-## ✨ What's This?
+</div>
 
-This is a **complete starter template** for making Playdate games in C. It includes:
+## ✨ Why This Template?
 
-- 🚀 **One-command setup** - Automatic environment configuration
-- 🔨 **Simple build system** - No CMake or Make knowledge required
-- 💻 **VS Code ready** - Press F5 to run your game!
-- 📚 **Beginner-friendly docs** - Clear examples and explanations
-- 🎮 **Working demo game** - See it running in seconds!
+This is a **complete, production-ready starter template** for Playdate game development in C. Whether you're a complete beginner or an experienced developer, you'll be building games in minutes:
 
-Perfect for both beginners and experienced developers! 🌟
+- 🚀 **One-Command Setup** - `.\setup.ps1` configures everything automatically
+- 🔨 **Zero Dependencies** - No CMake, no Make, no complex build systems
+- 💻 **VS Code Integration** - Press F5 to run, F10 to debug
+- 📚 **Beginner-Friendly** - Clear examples, well-commented code
+- 🎮 **Working Demo** - See a fully functional game immediately
+- 🛠️ **Professional Build System** - PowerShell scripts that just work
 
-## 🎯 Quick Start
+Perfect for beginners learning their first language AND experienced developers looking for a quick setup! 🌟
 
-### First Time? Run the Setup Wizard! 🧙‍♂️
+## 🎯 Quick Start (2 Minutes!)
+
+### Step 1️⃣: Run Setup
+
+Open PowerShell in this folder and run:
 
 ```powershell
 .\setup.ps1
 ```
 
-This friendly wizard will:
-- ✅ Check your computer for the right tools
-- ✅ Set up environment variables
+This wizard will automatically:
+- ✅ Check your system for required tools
+- ✅ Detect Visual Studio 2022 and Playdate SDK
+- ✅ Configure environment variables
 - ✅ Build and run the demo game
-- ✅ Configure VS Code for you
+- ✅ Set up VS Code for debugging
 
-**That's it!** You'll have a running game in minutes! 🎉
+### Step 2️⃣: See Your Game!
 
-### Already Set Up? Let's Code! 💪
+The demo game will launch in the Playdate Simulator. You'll see a bouncing text animation running at 30 FPS! 🎮
+
+### Step 3️⃣: Start Coding!
+
+Edit `src/main.c` and run:
 
 ```powershell
-# Build and run your game
 .\build.ps1 -Run
-
-# Just build
-.\build.ps1
-
-# Clean up
-.\build.ps1 -Clean
 ```
 
-Or use **VS Code**:
-- Press `F5` to run your game
-- Press `Ctrl+Shift+B` to build
+Your changes will compile and run in seconds! ⚡
 
-## 📋 What You Need
+## 📋 System Requirements
 
-- **Windows 10/11** 🪟
-- **Visual Studio 2022** (Community is free!)
-  - Include "Desktop development with C++"
-- **Playdate SDK** - Download from [play.date/dev](https://play.date/dev/)
-- **VS Code** (optional but recommended) 💙
+| Requirement | Version | Notes |
+|-----------|---------|-------|
+| **OS** | Windows 10/11 | 64-bit |
+| **Visual Studio** | 2022+ | Community (free), Professional, or Enterprise |
+| **C++ Workload** | Required | "Desktop development with C++" |
+| **Playdate SDK** | 2.0+ | [Download](https://play.date/dev/) |
+| **PowerShell** | 5.0+ | Usually pre-installed |
+| **VS Code** | Latest | Optional but recommended 💙 |
 
-**Don't have these yet?** No worries! The setup wizard will help you! 😊
+> **Don't have these yet?** No problem! The setup wizard will guide you through installation! 😊
 
 ## 📁 Project Structure
 
 ```
-📦 MyPlaydateGame/
-├── 🔧 setup.ps1          # Run this first! (Setup wizard)
-├── 🔨 build.ps1          # Build your game
-├── 📝 README.md          # You are here!
-├── 📖 GETTING_STARTED.md # Your next stop!
+📦 Playdate-C-Template/
+│
+├── 🔧 setup.ps1                    # ⭐ Run this first!
+├── 🔨 build.ps1                    # Build script
+├── 🧪 test.ps1                     # Run tests
+│
+├── 📖 README.md                    # Quick start (you are here!)
+├── 📖 GETTING_STARTED.md           # Learning resources & examples
+├── 📖 DEVELOPER_GUIDE.md           # Advanced topics
+│
+├── 📦 setup-config.json            # Project configuration (auto-created)
+├── 📄 CMakeLists.txt               # Alternative CMake build (optional)
+├── 📄 Makefile                     # Unix/Linux build (optional)
+│
 ├── 💻 src/
-│   └── main.c            # Your game code lives here!
-├── 🎨 .vscode/           # VS Code magic ✨
-├── 📦 build/             # Build outputs (auto-generated)
-└── 🎮 *.pdx              # Your game package!
+│   └── main.c                      # Your game code here! ✏️
+│
+├── 🎨 .vscode/
+│   ├── settings.json               # Editor settings
+│   ├── tasks.json                  # VS Code build tasks
+│   ├── launch.json                 # Debugger configuration
+│   └── c_cpp_properties.json       # IntelliSense setup
+│
+├── 📦 build/                       # Build artifacts (auto-generated)
+├── 📊 logs/                        # Setup & build logs
+└── 🎮 *.pdx                        # Your game package (auto-generated)
 ```
 
-## 🎓 Learning Path
+**Key Files:**
+- `setup.ps1` - Initialize environment (run this first!)
+- `build.ps1` - Compile your game
+- `src/main.c` - Your actual game code
+- `GETTING_STARTED.md` - Playdate C API tutorial
 
-New to Playdate development? Follow this path! 🛤️
+## 🎓 Your Learning Path
 
-1. 🏁 **Run `setup.ps1`** - Get everything installed
-2. 🎮 **See the demo** - Watch it run in the simulator
-3. ✏️ **Edit `src/main.c`** - Change the text, try stuff!
-4. 📖 **Read `GETTING_STARTED.md`** - Learn the basics
-5. 🚀 **Make your game!** - The world is your canvas!
+Following this path will get you from zero to working game! 🚀
+
+```
+START HERE
+    ↓
+[1] Run: .\setup.ps1
+    ↓
+[2] See: Demo game bouncing in simulator
+    ↓
+[3] Read: GETTING_STARTED.md (30 minutes)
+    ↓
+[4] Edit: src/main.c (change text, add colors)
+    ↓
+[5] Build: .\build.ps1 -Run
+    ↓
+[6] Learn: Playdate APIs in GETTING_STARTED.md
+    ↓
+[7] Make: Your awesome game! 🎮
+```
+
+Each step typically takes 5-15 minutes. You'll have a working game by the end! 💪
 
 ## 🎨 What's in the Demo?
 
-The template includes a simple bouncing text demo that shows:
-- ✅ How to set up a game loop
-- ✅ How to draw text on screen
-- ✅ How to make things move
-- ✅ How to display FPS
+The template comes with a working, bouncing text demo game. It demonstrates:
 
-It's super simple so you can easily understand and modify it! 🌈
-
-## 🛠️ Common Commands
-
-```powershell
-# Development workflow
-.\build.ps1 -Run          # Build + Run (most common!)
-.\build.ps1               # Just build
-.\build.ps1 -Clean        # Clean everything
-
-# In VS Code
-F5                        # Run game
-Ctrl+Shift+B              # Build
-Ctrl+`                    # Open terminal
+```c
+// Main game loop (runs 30 times per second)
+static int update(void* userdata) {
+    PlaydateAPI* pd = userdata;
+    
+    // Clear screen
+    pd->graphics->clear(kColorWhite);
+    
+    // Draw text
+    pd->graphics->setFont(font);
+    pd->graphics->drawText(text, strlen(text), kASCIIEncoding, x, y);
+    
+    // Update position
+    x += dx;
+    y += dy;
+    
+    // Bounce off edges
+    if (x < 0 || x > 400) dx = -dx;
+    if (y < 0 || y > 240) dy = -dy;
+    
+    return 1; // Keep running
+}
 ```
 
-## 🎯 Making It Your Own
+**Try this:**
+1. Run the demo with `.\build.ps1 -Run`
+2. Change `"My Playdate Game!"` to your name in `src/main.c`
+3. Save and run again - your name bounces instantly!
 
-### 1. Rename Your Game
+Perfect way to learn the workflow! 🎯
 
-Edit these files:
+## � Development Commands
 
-**build.ps1** (line 13):
-```powershell
-$PROJECT_NAME = "MyAwesomeGame"
+### Quick Reference
+
+| Command | What it does | When to use |
+|---------|-----------|-----------|
+| `.\setup.ps1` | Full setup wizard | First time setup |
+| `.\setup.ps1 -Mode check` | System health check | Troubleshooting |
+| `.\build.ps1 -Run` | Build + run in simulator | Daily development ⭐ |
+| `.\build.ps1` | Build only | Testing without running |
+| `.\build.ps1 -Clean` | Delete build artifacts | Before fresh build |
+
+### In VS Code (Recommended!)
+
+```
+F5              → Run game in debugger ▶️
+Ctrl+Shift+B    → Build project 🔨
+F10             → Step over (debugging)
+F11             → Step into (debugging)
+Shift+F5        → Stop debugging
 ```
 
-**CMakeLists.txt** (lines 27-28):
-```cmake
-set(PLAYDATE_GAME_NAME MyAwesomeGame)
-set(PLAYDATE_GAME_DEVICE MyAwesomeGame_DEVICE)
+> 💡 **Tip:** VS Code's debugger automatically stops at breakpoints. Press F9 on any line to set a breakpoint!
+
+## 🔧 Customizing Your Project
+
+### 1. Change Project Name
+
+After first run, edit `setup-config.json`:
+```json
+{
+    "projectName": "MyAwesomeGame",
+    "author": "Your Name",
+    "description": "The best Playdate game ever!",
+    "bundleID": "com.yourname.myawesomegame"
+}
 ```
 
-### 2. Start Coding!
+Then rebuild: `.\build.ps1`
 
-Open `src/main.c` and make it yours! 🎨
+### 2. Add More C Files
 
-### 3. Add More Files
+Create new files in `src/`:
+```
+src/
+├── main.c           (entry point)
+├── player.c         (player logic)
+├── player.h         (player header)
+├── enemy.c          (enemy logic)
+└── enemy.h          (enemy header)
+```
 
-Create new `.c` and `.h` files in `src/`, they'll be automatically compiled! 🎉
+They'll be automatically compiled! No need to update build scripts. ✨
 
-## 🆘 Troubleshooting
+### 3. Add Game Assets
 
-### "Cannot run scripts"
+Create these folders in the project root:
+```
+images/              # For .png/.bmp graphics
+sounds/              # For .mp3/.wav audio
+fonts/               # For custom .pft fonts
+```
+
+Reference them in code:
+```c
+LCDBitmap* sprite = pd->graphics->loadBitmap("images/player.png", &err);
+```
+
+## ⚠️ Troubleshooting
+
+### "Scripts cannot be loaded"
+
+**Problem:** PowerShell won't run `.ps1` files
+
+**Solution:**
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### "Cannot find SDK"
-Make sure `PLAYDATE_SDK_PATH` environment variable is set. Run `setup.ps1` again!
+Then run `.\setup.ps1` again.
 
-### "cl is not recognized"
-You need Visual Studio 2022 with C++ tools installed.
+---
+
+### "Cannot find SDK" / "PLAYDATE_SDK_PATH not set"
+
+**Problem:** Setup wizard can't locate Playdate SDK
+
+**Solutions:**
+1. **Option A:** Download SDK from [play.date/dev](https://play.date/dev/)
+2. **Option B:** Run `.\setup.ps1` again and specify the SDK path
+3. **Option C:** Set environment variable manually:
+   ```powershell
+   [Environment]::SetEnvironmentVariable("PLAYDATE_SDK_PATH", "C:\path\to\PlaydateSDK", "Machine")
+   ```
+
+---
+
+### "cl is not recognized" / "vcvars64.bat not found"
+
+**Problem:** Visual Studio 2022 not installed or not in default location
+
+**Solutions:**
+1. Install [Visual Studio 2022 Community](https://visualstudio.microsoft.com/vs/community/) (free!)
+2. During install, select "Desktop development with C++"
+3. Restart your terminal and try again
+
+---
+
+### "Build failed" / Compilation errors
+
+**Check these in order:**
+1. ✅ Run `.\setup.ps1 -Mode check` - verify all tools
+2. ✅ Check `logs/` folder for detailed error messages
+3. ✅ Make sure `src/main.c` is saved (Ctrl+S in editor)
+4. ✅ Try `.\build.ps1 -Clean` then `.\build.ps1 -Run`
+
+---
 
 ### VS Code IntelliSense not working
-Restart VS Code after running `setup.ps1`.
 
-**Still stuck?** Check [GETTING_STARTED.md](GETTING_STARTED.md) or visit the [Playdate Developer Forum](https://devforum.play.date/)!
+**Problem:** VS Code doesn't show autocomplete or error highlighting
+
+**Solutions:**
+1. Install the **C/C++ Extension** (Microsoft) from VS Code marketplace
+2. Restart VS Code completely
+3. Run `.\setup.ps1` again to reconfigure
+4. Delete `.vscode/.vs` folder if it exists
+
+---
+
+### "Cannot open include file 'pd_api.h'"
+
+**Problem:** Compiler can't find the Playdate SDK headers
+
+**Solution:**
+Verify `PLAYDATE_SDK_PATH` is set:
+```powershell
+$env:PLAYDATE_SDK_PATH
+```
+
+Should output something like: `C:\path\to\PlaydateSDK`
+
+---
+
+### Still stuck? 🤔
+
+1. 📖 Check [GETTING_STARTED.md](GETTING_STARTED.md) for API examples
+2. 📚 Read [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for advanced topics
+3. 💬 Visit [Playdate Developer Forum](https://devforum.play.date/)
+4. 🆘 Search GitHub issues for similar problems
 
 ## 📚 Documentation
 
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Learn Playdate C basics, APIs, and game development
-- **[README.md](README.md)** - This file! Quick reference
+| Document | Purpose | Read When |
+|----------|---------|-----------|
+| **[README.md](README.md)** | Quick start guide | First time (you are here!) |
+| **[GETTING_STARTED.md](GETTING_STARTED.md)** | API tutorial & examples | Learning Playdate C |
+| **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** | Advanced workflows | Going deeper |
+| **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** | Share your game | Before publishing |
 
-That's it! We kept it simple. 😊
+### Quick Links
 
-## 🌟 Features
+- 📖 **Official SDK Docs:** [sdk.play.date](https://sdk.play.date/)
+- 💬 **Developer Forum:** [devforum.play.date](https://devforum.play.date/)
+- 🎮 **Official Site:** [play.date](https://play.date/)
+- 📦 **SDK Downloads:** [play.date/dev](https://play.date/dev/)
 
-- ✅ **Zero-dependency build** - No CMake or Make required!
-- ✅ **Auto-detection** - Finds VS and SDK automatically
-- ✅ **One-command setup** - `setup.ps1` does everything
-- ✅ **VS Code integrated** - Keyboard shortcuts and debugging
-- ✅ **Beginner-friendly** - Clear docs and working examples
-- ✅ **Template ready** - Fork and start coding immediately!
+## ⭐ Why Choose This Template?
 
-## 🤝 Share This Template!
+| Feature | This Template | Manual Setup |
+|---------|---------------|--------------|
+| Setup time | 1 minute | 30+ minutes |
+| CMake required | ❌ No | ⚠️ Often yes |
+| VS Code integration | ✅ Built-in | ❌ Manual config |
+| Debugging | ✅ Ready to go | ❌ Complex setup |
+| Beginner friendly | ✅ Yes | ❌ Complicated |
+| Newbie docs | ✅ Included | ❌ None |
+| Demo game | ✅ Included | ❌ Empty project |
 
-Love it? Share it! 💖
+Save yourself hours of configuration! Get straight to creating! 🚀
 
-- Give it a ⭐ on GitHub
-- Share with other Playdate devs
-- Make something awesome and show us!
+## 🤝 Contributing & Support
 
-To use this template for a new game:
-1. Fork or download this repository
-2. Run `setup.ps1`
-3. Start making your game!
+### Share This Template! 💖
+
+Love it? Help others find it:
+- ⭐ Star on GitHub
+- 🔄 Share with friends learning Playdate
+- 🐛 Report issues
+- 💡 Suggest improvements
+
+### Made Something Awesome?
+
+Show us what you built! 🎮
+- 📸 Post screenshots
+- 🎬 Share gameplay videos
+- 💬 Tell us on the forum
+
+---
 
 ## 📜 License
 
-MIT License - Make awesome games! 🎮
+MIT License - Make games freely! 🎮
 
 See [License.md](License.md) for details.
-
-## 🔗 Resources
-
-- 📖 [Playdate SDK Docs](https://sdk.play.date/)
-- 💬 [Developer Forum](https://devforum.play.date/)
-- 🎮 [Official Playdate Site](https://play.date/)
-- 📦 [SDK Examples](https://play.date/dev/)
 
 ---
 
 <div align="center">
 
-**Ready to make games?** 🚀
+### 🚀 Ready? Let's Go!
 
-Run `.\setup.ps1` and let's go!
+```powershell
+.\setup.ps1
+```
 
-Made with 💛 for the Playdate community
+Then open `src/main.c` and start creating! ✨
+
+**Made with 💛 for the Playdate community**
+
+*Questions?* Visit the [Developer Forum](https://devforum.play.date/)
 
 </div>
