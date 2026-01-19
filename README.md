@@ -39,17 +39,18 @@ Open PowerShell in this folder and run:
 ```
 
 This wizard will automatically:
+
 - ✅ Check your system for required tools
 - ✅ Detect Visual Studio 2022 and Playdate SDK
 - ✅ Configure environment variables
 - ✅ Build and run the demo game
 - ✅ Set up VS Code for debugging
 
-### Step 2️⃣: See Your Game!
+### Step 2️⃣: See Your Game
 
 The demo game will launch in the Playdate Simulator. You'll see a bouncing text animation running at 30 FPS! 🎮
 
-### Step 3️⃣: Start Coding!
+### Step 3️⃣: Start Coding
 
 Edit `src/main.c` and run:
 
@@ -104,6 +105,7 @@ Your changes will compile and run in seconds! ⚡
 ```
 
 **Key Files:**
+
 - `setup.ps1` - Initialize environment (run this first!)
 - `build.ps1` - Compile your game
 - `src/main.c` - Your actual game code
@@ -141,27 +143,28 @@ The template comes with a working, bouncing text demo game. It demonstrates:
 // Main game loop (runs 30 times per second)
 static int update(void* userdata) {
     PlaydateAPI* pd = userdata;
-    
+
     // Clear screen
     pd->graphics->clear(kColorWhite);
-    
+
     // Draw text
     pd->graphics->setFont(font);
     pd->graphics->drawText(text, strlen(text), kASCIIEncoding, x, y);
-    
+
     // Update position
     x += dx;
     y += dy;
-    
+
     // Bounce off edges
     if (x < 0 || x > 400) dx = -dx;
     if (y < 0 || y > 240) dy = -dy;
-    
+
     return 1; // Keep running
 }
 ```
 
 **Try this:**
+
 1. Run the demo with `.\build.ps1 -Run`
 2. Change `"My Playdate Game!"` to your name in `src/main.c`
 3. Save and run again - your name bounces instantly!
@@ -197,6 +200,7 @@ Shift+F5        → Stop debugging
 ### 1. Change Project Name
 
 After first run, edit `setup-config.json`:
+
 ```json
 {
     "projectName": "MyAwesomeGame",
@@ -211,6 +215,7 @@ Then rebuild: `.\build.ps1`
 ### 2. Add More C Files
 
 Create new files in `src/`:
+
 ```
 src/
 ├── main.c           (entry point)
@@ -225,6 +230,7 @@ They'll be automatically compiled! No need to update build scripts. ✨
 ### 3. Add Game Assets
 
 Create these folders in the project root:
+
 ```
 images/              # For .png/.bmp graphics
 sounds/              # For .mp3/.wav audio
@@ -232,6 +238,7 @@ fonts/               # For custom .pft fonts
 ```
 
 Reference them in code:
+
 ```c
 LCDBitmap* sprite = pd->graphics->loadBitmap("images/player.png", &err);
 ```
@@ -243,6 +250,7 @@ LCDBitmap* sprite = pd->graphics->loadBitmap("images/player.png", &err);
 **Problem:** PowerShell won't run `.ps1` files
 
 **Solution:**
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
@@ -256,9 +264,11 @@ Then run `.\setup.ps1` again.
 **Problem:** Setup wizard can't locate Playdate SDK
 
 **Solutions:**
+
 1. **Option A:** Download SDK from [play.date/dev](https://play.date/dev/)
 2. **Option B:** Run `.\setup.ps1` again and specify the SDK path
 3. **Option C:** Set environment variable manually:
+
    ```powershell
    [Environment]::SetEnvironmentVariable("PLAYDATE_SDK_PATH", "C:\path\to\PlaydateSDK", "Machine")
    ```
@@ -270,6 +280,7 @@ Then run `.\setup.ps1` again.
 **Problem:** Visual Studio 2022 not installed or not in default location
 
 **Solutions:**
+
 1. Install [Visual Studio 2022 Community](https://visualstudio.microsoft.com/vs/community/) (free!)
 2. During install, select "Desktop development with C++"
 3. Restart your terminal and try again
@@ -279,6 +290,7 @@ Then run `.\setup.ps1` again.
 ### "Build failed" / Compilation errors
 
 **Check these in order:**
+
 1. ✅ Run `.\setup.ps1 -Mode check` - verify all tools
 2. ✅ Check `logs/` folder for detailed error messages
 3. ✅ Make sure `src/main.c` is saved (Ctrl+S in editor)
@@ -291,6 +303,7 @@ Then run `.\setup.ps1` again.
 **Problem:** VS Code doesn't show autocomplete or error highlighting
 
 **Solutions:**
+
 1. Install the **C/C++ Extension** (Microsoft) from VS Code marketplace
 2. Restart VS Code completely
 3. Run `.\setup.ps1` again to reconfigure
@@ -304,6 +317,7 @@ Then run `.\setup.ps1` again.
 
 **Solution:**
 Verify `PLAYDATE_SDK_PATH` is set:
+
 ```powershell
 $env:PLAYDATE_SDK_PATH
 ```
@@ -354,6 +368,7 @@ Save yourself hours of configuration! Get straight to creating! 🚀
 ### Share This Template! 💖
 
 Love it? Help others find it:
+
 - ⭐ Star on GitHub
 - 🔄 Share with friends learning Playdate
 - 🐛 Report issues
@@ -362,6 +377,7 @@ Love it? Help others find it:
 ### Made Something Awesome?
 
 Show us what you built! 🎮
+
 - 📸 Post screenshots
 - 🎬 Share gameplay videos
 - 💬 Tell us on the forum
@@ -378,15 +394,7 @@ See [License.md](License.md) for details.
 
 <div align="center">
 
-### 🚀 Ready? Let's Go!
-
-```powershell
-.\setup.ps1
-```
-
-Then open `src/main.c` and start creating! ✨
-
-**Made with 💛 for the Playdate community**
+### 🚀 Ready? Let's Go
 
 *Questions?* Visit the [Developer Forum](https://devforum.play.date/)
 

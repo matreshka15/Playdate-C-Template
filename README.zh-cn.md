@@ -39,17 +39,18 @@
 ```
 
 这个友好的向导将自动：
+
 - ✅ 检查系统是否有所需工具
 - ✅ 自动检测 Visual Studio 2022 和 Playdate SDK
 - ✅ 配置环境变量
 - ✅ 编译并运行演示游戏
 - ✅ 为 VS Code 设置调试配置
 
-### 第 2️⃣ 步：查看你的游戏！
+### 第 2️⃣ 步：查看你的游戏
 
 演示游戏将在 Playdate 模拟器中启动。你会看到一个以 30 FPS 运行的弹跳文字动画！🎮
 
-### 第 3️⃣ 步：开始编码！
+### 第 3️⃣ 步：开始编码
 
 编辑 `src/main.c` 并运行：
 
@@ -105,6 +106,7 @@
 ```
 
 **关键文件：**
+
 - `setup.ps1` - 初始化环境（首先运行这个！）
 - `build.ps1` - 编译你的游戏
 - `src/main.c` - 你的实际游戏代码
@@ -166,27 +168,28 @@ Shift+F5        → 停止调试
 // 主游戏循环（每秒运行 30 次）
 static int update(void* userdata) {
     PlaydateAPI* pd = userdata;
-    
+
     // 清空屏幕
     pd->graphics->clear(kColorWhite);
-    
+
     // 绘制文字
     pd->graphics->setFont(font);
     pd->graphics->drawText(text, strlen(text), kASCIIEncoding, x, y);
-    
+
     // 更新位置
     x += dx;
     y += dy;
-    
+
     // 在边缘反弹
     if (x < 0 || x > 400) dx = -dx;
     if (y < 0 || y > 240) dy = -dy;
-    
+
     return 1; // 继续运行
 }
 ```
 
 **试试这个：**
+
 1. 用 `.\build.ps1 -Run` 运行演示
 2. 在 `src/main.c` 中将 `"My Playdate Game!"` 改成你的名字
 3. 保存并再次运行 - 你的名字立即弹跳起来！
@@ -198,6 +201,7 @@ static int update(void* userdata) {
 ### 1. 更改项目名称
 
 首次运行后，编辑 `setup-config.json`：
+
 ```json
 {
     "projectName": "我的超棒游戏",
@@ -212,6 +216,7 @@ static int update(void* userdata) {
 ### 2. 添加更多 C 文件
 
 在 `src/` 中创建新文件：
+
 ```
 src/
 ├── main.c           （入口点）
@@ -226,6 +231,7 @@ src/
 ### 3. 添加游戏资源
 
 在项目根目录创建这些文件夹：
+
 ```
 images/              # 用于 .png/.bmp 图形
 sounds/              # 用于 .mp3/.wav 音频
@@ -233,6 +239,7 @@ fonts/               # 用于自定义 .pft 字体
 ```
 
 在代码中引用它们：
+
 ```c
 LCDBitmap* sprite = pd->graphics->loadBitmap("images/player.png", &err);
 ```
@@ -244,6 +251,7 @@ LCDBitmap* sprite = pd->graphics->loadBitmap("images/player.png", &err);
 **问题：** PowerShell 拒绝运行 `.ps1` 文件
 
 **解决方案：**
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
@@ -257,9 +265,11 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **问题：** 设置向导找不到 Playdate SDK
 
 **解决方案：**
+
 1. **选项 A：** 从 [play.date/dev](https://play.date/dev/) 下载 SDK
 2. **选项 B：** 再次运行 `.\setup.ps1` 并指定 SDK 路径
 3. **选项 C：** 手动设置环境变量：
+
    ```powershell
    [Environment]::SetEnvironmentVariable("PLAYDATE_SDK_PATH", "C:\path\to\PlaydateSDK", "Machine")
    ```
@@ -271,6 +281,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **问题：** 未安装 Visual Studio 2022 或不在默认位置
 
 **解决方案：**
+
 1. 安装 [Visual Studio 2022 Community](https://visualstudio.microsoft.com/vs/community/)（免费！）
 2. 安装期间选择"Desktop development with C++"
 3. 重启你的终端并重试
@@ -280,6 +291,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ### "构建失败" / 编译错误
 
 **按顺序检查这些：**
+
 1. ✅ 运行 `.\setup.ps1 -Mode check` - 验证所有工具
 2. ✅ 检查 `logs/` 文件夹获取详细错误信息
 3. ✅ 确保 `src/main.c` 已保存（编辑器中按 Ctrl+S）
@@ -292,6 +304,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **问题：** VS Code 不显示自动完成或错误高亮
 
 **解决方案：**
+
 1. 从 VS Code 应用商店安装 **C/C++ Extension**（Microsoft）
 2. 完全重启 VS Code
 3. 再次运行 `.\setup.ps1` 重新配置
@@ -305,6 +318,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 **解决方案：**
 验证 `PLAYDATE_SDK_PATH` 已设置：
+
 ```powershell
 $env:PLAYDATE_SDK_PATH
 ```
@@ -356,6 +370,7 @@ $env:PLAYDATE_SDK_PATH
 ### 分享本模板！💖
 
 喜欢它？帮助其他人找到它：
+
 - ⭐ 在 GitHub 上 Star
 - 🔄 与学习 Playdate 的朋友分享
 - 🐛 报告 Bug
@@ -364,6 +379,7 @@ $env:PLAYDATE_SDK_PATH
 ### 做出了很棒的东西？
 
 展示给我们看！🎮
+
 - 📸 发布截图
 - 🎬 分享游戏视频
 - 💬 在论坛中告诉我们
@@ -380,15 +396,7 @@ MIT 许可证 - 自由制作游戏！🎮
 
 <div align="center">
 
-### 🚀 准备好了？让我们开始吧！
-
-```powershell
-.\setup.ps1
-```
-
-然后打开 `src/main.c` 开始创建！✨
-
-**用 💛 为 Playdate 社区制作**
+### 🚀 准备好了？让我们开始吧
 
 *有问题？* 访问 [开发者论坛](https://devforum.play.date/)
 
