@@ -1,18 +1,39 @@
 {
+    // ==========================================================
+    //  Playdate Project Configuration
+    //  由 setup.ps1 自动写入。如改了项目名，请同步 setup-config.json
+    // ==========================================================
+    "playdate.projectName": "MyPlaydateGame",
+
+    // C/C++ language support
     "files.associations": {
         "*.h": "c",
         "*.c": "c",
         "pd_api.h": "c"
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
     "cmake.configureOnOpen": false,
+
+    // Expose SDK path to integrated terminal
     "terminal.integrated.env.windows": {
-        "PLAYDATE_SDK_PATH": "D:\\APP\\PlaydateSDK"
+        "PLAYDATE_SDK_PATH": "${env:PLAYDATE_SDK_PATH}"
     },
+
+    // Explorer polish
     "files.exclude": {
         "**/.git": true,
         "**/.DS_Store": true,
         "**/build": true,
         "**/*.pdx": false
+    },
+    "editor.formatOnSave": false,
+    "C_Cpp.formatting": "vcFormat",
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.c": "${capture}.h",
+        "README.md": "README.*.md, QUICKSTART.md, License.md",
+        "setup.ps1": "setup-*.*, setup.*.*",
+        "build.ps1": "test.ps1, CMakeLists.txt, Makefile",
+        "CMakeLists.txt": "CMakeLists.txt.user"
     }
 }

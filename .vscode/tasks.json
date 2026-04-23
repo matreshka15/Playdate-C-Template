@@ -2,7 +2,8 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "构建游戏 (build.ps1)",
+            "label": "Build",
+            "detail": "构建游戏 (生成 .pdx 包)",
             "type": "shell",
             "command": "${workspaceFolder}\\build.ps1",
             "problemMatcher": [],
@@ -17,7 +18,8 @@
             }
         },
         {
-            "label": "构建并运行游戏",
+            "label": "Build & Run",
+            "detail": "构建并在模拟器中运行",
             "type": "shell",
             "command": "${workspaceFolder}\\build.ps1",
             "args": ["-Run"],
@@ -29,7 +31,8 @@
             }
         },
         {
-            "label": "清理构建",
+            "label": "Clean",
+            "detail": "清理构建产物",
             "type": "shell",
             "command": "${workspaceFolder}\\build.ps1",
             "args": ["-Clean"],
@@ -40,9 +43,23 @@
             }
         },
         {
-            "label": "运行配置向导",
+            "label": "Setup",
+            "detail": "运行配置向导 (首次使用必跑)",
             "type": "shell",
             "command": "${workspaceFolder}\\setup.ps1",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            }
+        },
+        {
+            "label": "Check Environment",
+            "detail": "检查开发环境状态",
+            "type": "shell",
+            "command": "${workspaceFolder}\\setup.ps1",
+            "args": ["-Mode", "check"],
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
@@ -52,3 +69,4 @@
         }
     ]
 }
+

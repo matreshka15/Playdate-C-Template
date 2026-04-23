@@ -1,20 +1,20 @@
-{
-    "projectName": "MyPlaydateGame",
-    "author": "Developer",
-    "description": "My Playdate Game",
-    "bundleID": "com.example.myplaydategame",
-    "version": "1.0.0",
-    "buildNumber": "1",
-    "sdkPath": "${env:PLAYDATE_SDK_PATH}",
-    "visualStudioPath": "",
-    "features": {
-        "enableLogging": true,
-        "enableDebugMode": false,
-        "enableAnalytics": false
-    },
-    "buildSettings": {
-        "optimizationLevel": "2",
-        "warningLevel": "3",
-        "generateDebugInfo": true
-    }
+﻿{
+    "buildNumber":  "1",
+    "sdkPath":  "D:\\APP\\PlaydateSDK",
+    "description":  "My Playdate Game",
+    "projectName":  "MyPlaydateGame",
+    "buildSettings":  {
+                          "generateDebugInfo":  true,
+                          "warningLevel":  "3",
+                          "optimizationLevel":  "2"
+                      },
+    "author":  "Developer",
+    "visualStudioPath":  "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat",
+    "features":  {
+                     "enableDebugMode":  false,
+                     "enableLogging":  true,
+                     "enableAnalytics":  false
+                 },
+    "bundleID":  "com.example.myplaydategame",
+    "version":  "1.0.0"
 }
